@@ -1,9 +1,9 @@
 package main
 
-import "fmt"
-
-//import "io/ioutil"
-import "github.com/sbinet/go-gnuplot"
+import (
+	"fmt"
+	"github.com/ckitagawa/go-gnuplot"
+)
 
 func main() {
 	fname := ""
@@ -17,13 +17,13 @@ func main() {
 	}
 	defer p.Close()
 
-	p.PlotX([]float64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "some data")
+	p.CheckedCmd("plot %f*x", 23.0)
+	p.CheckedCmd("plot %f * cos(%f * x)", 32.0, -3.0)
 	p.CheckedCmd("set terminal pdf")
-	p.CheckedCmd("set output 'plot002.pdf'")
+	p.CheckedCmd("set output 'plot001.pdf'")
 	p.CheckedCmd("replot")
 
 	p.CheckedCmd("q")
+
 	return
 }
-
-/* EOF */

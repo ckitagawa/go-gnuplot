@@ -1,7 +1,9 @@
 package main
 
-import "fmt"
-import "github.com/sbinet/go-gnuplot"
+import (
+	"fmt"
+	"github.com/ckitagawa/go-gnuplot"
+)
 
 func main() {
 	fname := ""
@@ -26,5 +28,3 @@ func main() {
 	p.CheckedCmd("q")
 	return
 }
-
-/* EOF */
