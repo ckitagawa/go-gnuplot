@@ -1,4 +1,4 @@
-go-gnuplot
+go-gnuplot ![travis](https://travis-ci.org/ckitagawa/go-gnuplot.svg?branch=master)
 ==========
 
 Simple-minded functions to work with ``gnuplot``.
@@ -52,7 +52,6 @@ func main() {
 	p.CheckedCmd("set output 'plot002.pdf'")
 	p.CheckedCmd("replot")
 
-
 	p.CheckedCmd("q")
 	return
 }
@@ -61,9 +60,26 @@ func main() {
 ![plot-t-002](https://github.com/ckitagawa/go-gnuplot/raw/master/examples/imgs/plot002.png)
 
 
-Documentation
--------------
+Motivation
+----------
 
-API documentation can be found here:
+[Gonum](https://github.com/gonum/gonum) now makes it feasible to author
+scientific and engineering computing code in Go. This is great news because it
+enables more efficient, compiled and type-safe code that is not nearly as easy
+to achieve in Python. Furthermore, it is less of a headache to get a Go program
+running than C or C++ and is usually more portable. Moreover, it has great
+concurrency primitives which are a real boon to doing numeric computing more
+efficiently.
 
- http://godoc.org/github.com/ckitagawa/go-gnuplot
+That being said, this project is slightly counter-intuitive in the sense it
+limits portability to platforms supporting gnuplot and currently doesn't play
+nice with goroutines. Additionally, native graphing packages like
+[wcharczuk/go-chart](https://github.com/wcharczuk/go-chart) and
+[gonum/plot](https://github.com/gonum/plot) already exist; however, none of
+them have mature 3D plotting capabilities nor strong support for quivers and
+streamlines. Unfortunately, these are features required in engineering and
+scientific computing or a fairly regular basis. As a result, this package needs
+to live on a bit longer to service those in need of these specialized charts.
+That said, it is my sincere hope that this library will not be necessary for
+much longer.
+
