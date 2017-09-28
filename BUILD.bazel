@@ -1,0 +1,16 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_prefix")
+
+go_prefix("github.com/ckitagawa/go-gnuplot")
+
+load("@io_bazel_rules_go//go:def.bzl", "gazelle")
+
+gazelle(
+    name = "gazelle",
+    prefix = "github.com/ckitagawa/go-gnuplot",
+)
+
+go_library(
+    name = "go_default_library",
+    srcs = ["gnuplot.go"],
+    visibility = ["//visibility:public"],
+)

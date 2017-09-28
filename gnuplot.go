@@ -330,17 +330,16 @@ func (self *Plotter) SetPlotCmd(cmd string) (err error) {
 // 		"pm3d"
 func (self *Plotter) SetStyle(style string) (err error) {
 	allowed := []string{
-		"lines", 
-		"points", 
+		"lines",
+		"points",
 		"linespoints",
-		"impulses", 
+		"impulses",
 		"dots",
 		"steps",
 		"errorbars",
 		"boxes",
 		"boxerrorbars",
-		"pm3d"
-	}
+		"pm3d"}
 
 	for _, s := range allowed {
 		if s == style {

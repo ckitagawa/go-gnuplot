@@ -1,8 +1,9 @@
 package main
 
-import "fmt"
-import "github.com/sbinet/go-gnuplot"
-import "math"
+import (
+	"fmt"
+	"github.com/ckitagawa/go-gnuplot"
+)
 
 func main() {
 	fname := ""
@@ -16,18 +17,17 @@ func main() {
 	}
 	defer p.Close()
 
-	p.SetStyle("steps")
-	p.PlotFunc([]float64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
-		func(x float64) float64 { return math.Exp(float64(x) + 2.) },
-		"test plot-func")
+	p.SetPlotCmd("splot")
+	p.SetStyle("pm3d")
+
+	p.PlotXY([]float64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+		[]float64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "some data - x/y")
 	p.SetXLabel("my x data")
 	p.SetYLabel("my y data")
 	p.CheckedCmd("set terminal pdf")
-	p.CheckedCmd("set output 'plot004.pdf'")
+	p.CheckedCmd("set output 'plot003.pdf'")
 	p.CheckedCmd("replot")
 
 	p.CheckedCmd("q")
 	return
 }
-
-/* EOF */
