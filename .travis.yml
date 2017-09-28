@@ -1,0 +1,60 @@
+language: generic
+
+# Largely borrowed from https://github.com/mbrukman/autogen
+
+# `sudo` is required only because `ed` is not yet a whitelisted package:
+# https://github.com/travis-ci/apt-package-whitelist/issues/3681
+# Once it is, we can drop this and switch to container-based builds.
+sudo: true
+
+matrix:
+  include:
+    - os: linux
+      dist: trusty
+
+      # We cannot use the APT addon because neither the repository nor the Bazel
+      # package are whitelisted. This means we must use `sudo` and hence cannot
+      # run on the container-based infrastructure.
+      sudo: required
+
+      # This is a necessary setting; without it, `oracle-java8-installer` does
+      # not install: https://travis-ci.org/mbrukman/autogen/jobs/178708337
+      language: java
+
+      # Using JDK switcher setting in addition to the `oracle-java8-installer`
+      # package below as follows:
+      #
+      #     jdk:
+      #       - oraclejdk8
+      #
+      # fails with:
+      #
+      #     $ jdk_switcher use ["oraclejdk8"]
+      #     Sorry, but JDK '[oraclejdk8]' is not known.
+      #     The command "jdk_switcher use ["oraclejdk8"]" failed and exited with 1 during .
+      #
+      # even though `oracle-java8-installer` installed successfully moments
+      # prior: https://travis-ci.org/mbrukman/autogen/jobs/178714227
+      #
+      # Using the same setting:
+      #
+      #     jdk:
+      #       - oraclejdk8
+      #
+      # without installing the `oracle-java8-installer` package produces the
+      # same error: https://travis-ci.org/mbrukman/autogen/jobs/178710299
+
+      addons:
+        apt:
+          sources:
+            - sourceline: "deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8"
+              key_url: "https://storage.googleapis.com/bazel-apt/doc/apt-key.pub.gpg"
+          packages:
+            - oracle-java8-installer
+            - bazel
+
+      script:
+        - bazel build //...
+          # Disabled until tests are written
+          # - bazel test //...
+
