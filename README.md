@@ -80,7 +80,7 @@ nice with goroutines. Additionally, native graphing packages like
 [gonum/plot](https://github.com/gonum/plot) already exist; however, none of
 them have mature 3D plotting capabilities nor strong support for quivers and
 streamlines. Unfortunately, these are features required in engineering and
-scientific computing or a fairly regular basis. As a result, this package needs
+scientific computing on a fairly regular basis. As a result, this package needs
 to live on a bit longer to service those in need of these specialized charts.
 That said, it is my sincere hope that this library will not be necessary for
 much longer.
