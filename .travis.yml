@@ -1,5 +1,7 @@
 language: generic
 
+# Largely borrowed from https://github.com/mbrukman/autogen
+
 # `sudo` is required only because `ed` is not yet a whitelisted package:
 # https://github.com/travis-ci/apt-package-whitelist/issues/3681
 # Once it is, we can drop this and switch to container-based builds.
@@ -9,7 +11,6 @@ matrix:
   include:
     - os: linux
       dist: trusty
-      env: TEST_RUNNER=bazel
 
       # We cannot use the APT addon because neither the repository nor the Bazel
       # package are whitelisted. This means we must use `sudo` and hence cannot
@@ -56,3 +57,4 @@ matrix:
         - bazel build //...
           # Disabled until tests are written
           # - bazel test //...
+

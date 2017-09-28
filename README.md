@@ -1,4 +1,6 @@
-go-gnuplot ![travis](https://travis-ci.org/ckitagawa/go-gnuplot.svg?branch=master)
+go-gnuplot 
+[![GoDoc](https://godoc.org/github.com/ckitagawa/go-gnuplot?status.svg)](http://godoc.org/github.com/ckitagawa/go-gnuplot)
+[![Build Status](https://travis-ci.org/ckitagawa/go-gnuplot.svg?branch=master)](https://travis-ci.org/ckitagawa/go-gnuplot)  
 ==========
 
 Simple-minded functions to work with ``gnuplot``.
