@@ -1,5 +1,5 @@
-// gnuplot is a simple minded set of functions to manage a gnuplot subprocess
-// in order to plot data.
+// Package gnuplot is a simple minded set of functions to manage a gnuplot
+// subprocess in order to plot data.
 // See the gnuplot documentation page for the exact semantics of the gnuplot
 // commands.
 //  http://www.gnuplot.info/
@@ -14,13 +14,23 @@ import (
 	"os/exec"
 )
 
-var g_gnuplot_cmd string
-var g_gnuplot_prefix string = "go-gnuplot-"
+// Globals
+const (
+	gnuplotPrefix string = "go-gnuplot-"
+)
 
-type gnuplot_error struct {
+var gGnuplotCmd string
+
+// Error type
+type gnuplotError struct {
 	err string
 }
 
+func (e *gnuplotError) Error() string {
+	return e.err
+}
+
+// Helpers
 func min(a, b int) int {
 	if a < b {
 		return a
@@ -28,50 +38,52 @@ func min(a, b int) int {
 	return b
 }
 
+// Internal Functions
+
+// init is a function run on module load in Golang so this will be run before
+// anything else in the package.
 func init() {
-	var err error
-	g_gnuplot_cmd, err = exec.LookPath("gnuplot")
+	var err error // Necessary to avoid shadowing the global
+	gGnuplotCmd, err = exec.LookPath("gnuplot")
 	if err != nil {
 		fmt.Printf("** could not find path to 'gnuplot':\n%v\n", err)
 		panic("could not find 'gnuplot'")
 	}
-	fmt.Printf("-- found gnuplot command: %s\n", g_gnuplot_cmd)
+	fmt.Printf("-- found gnuplot command: %s\n", gGnuplotCmd)
 }
 
-func (e *gnuplot_error) Error() string {
-	return e.err
-}
-
-type plotter_process struct {
+type plotterProcess struct {
 	handle *exec.Cmd
 	stdin  io.WriteCloser
 }
 
-func new_plotter_proc(persist bool) (*plotter_process, error) {
-	proc_args := []string{}
+func newPlotterProc(persist bool) (*plotterProcess, error) {
+	procArgs := []string{}
 	if persist {
-		proc_args = append(proc_args, "-persist")
+		procArgs = append(procArgs, "-persist")
 	}
-	fmt.Printf("--> [%v] %v\n", g_gnuplot_cmd, proc_args)
-	cmd := exec.Command(g_gnuplot_cmd, proc_args...)
+	fmt.Printf("--> [%v] %v\n", gGnuplotCmd, procArgs)
+	cmd := exec.Command(gGnuplotCmd, procArgs...)
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, err
 	}
-	return &plotter_process{handle: cmd, stdin: stdin}, cmd.Start()
+	return &plotterProcess{handle: cmd, stdin: stdin}, cmd.Start()
 }
 
-type tmpfiles_db map[string]*os.File
+type tmpfilesDb map[string]*os.File
+
+// Public API
 
 // Plotter is a handle to a gnuplot subprocess, forwarding commands
 // via its stdin
 type Plotter struct {
-	proc     *plotter_process
+	proc     *plotterProcess
 	debug    bool
 	plotcmd  string
 	nplots   int    // number of currently active plots
 	style    string // current plotting style
-	tmpfiles tmpfiles_db
+	tmpfiles tmpfilesDb
 }
 
 // Cmd sends a command to the gnuplot subprocess and returns an error
@@ -82,13 +94,13 @@ type Plotter struct {
 //   if err != nil {
 //     panic(err)
 //   }
-func (self *Plotter) Cmd(format string, a ...interface{}) error {
+func (pltr *Plotter) Cmd(format string, a ...interface{}) error {
 	cmd := fmt.Sprintf(format, a...) + "\n"
-	n, err := io.WriteString(self.proc.stdin, cmd)
+	n, err := io.WriteString(pltr.proc.stdin, cmd)
 
-	if self.debug {
+	if pltr.debug {
 		//buf := new(bytes.Buffer)
-		//io.Copy(buf, self.proc.handle.Stdout)
+		//io.Copy(buf, pltr.proc.handle.Stdout)
 		fmt.Printf("cmd> %v", cmd)
 		fmt.Printf("res> %v\n", n)
 	}
@@ -101,11 +113,10 @@ func (self *Plotter) Cmd(format string, a ...interface{}) error {
 // ex:
 //   fname := "foo.dat"
 //   p.CheckedCmd("plot %s", fname)
-func (self *Plotter) CheckedCmd(format string, a ...interface{}) {
-	err := self.Cmd(format, a...)
+func (pltr *Plotter) CheckedCmd(format string, a ...interface{}) {
+	err := pltr.Cmd(format, a...)
 	if err != nil {
-		err_string := fmt.Sprintf("** err: %v\n", err)
-		panic(err_string)
+		panic(fmt.Sprintf("** err: %v\n", err))
 	}
 }
 
@@ -115,12 +126,12 @@ func (self *Plotter) CheckedCmd(format string, a ...interface{}) {
 //   p, err := gnuplot.NewPlotter(...)
 //   if err != nil { /* handle error */ }
 //   defer p.Close()
-func (self *Plotter) Close() (err error) {
-	if self.proc != nil && self.proc.handle != nil {
-		self.proc.stdin.Close()
-		err = self.proc.handle.Wait()
+func (pltr *Plotter) Close() (err error) {
+	if pltr.proc != nil && pltr.proc.handle != nil {
+		pltr.proc.stdin.Close()
+		err = pltr.proc.handle.Wait()
 	}
-	self.ResetPlot()
+	pltr.ResetPlot()
 	return err
 }
 
@@ -132,19 +143,19 @@ func (self *Plotter) Close() (err error) {
 //           []float64{0,1,2,3}, // x-data
 //           []float64{0,1,2,3}, // y-data
 //           []float64{0,1,2,3}) // z-data
-func (self *Plotter) PlotNd(title string, data ...[]float64) error {
+func (pltr *Plotter) PlotNd(title string, data ...[]float64) error {
 	ndims := len(data)
 
 	switch ndims {
 	case 1:
-		return self.PlotX(data[0], title)
+		return pltr.PlotX(data[0], title)
 	case 2:
-		return self.PlotXY(data[0], data[1], title)
+		return pltr.PlotXY(data[0], data[1], title)
 	case 3:
-		return self.PlotXYZ(data[0], data[1], data[2], title)
+		return pltr.PlotXYZ(data[0], data[1], data[2], title)
 	}
 
-	return &gnuplot_error{fmt.Sprintf("invalid number of dims '%v'", ndims)}
+	return &gnuplotError{fmt.Sprintf("invalid number of dims '%v'", ndims)}
 }
 
 // PlotX will create a 2-d plot using `data` as input and `title` as the plot
@@ -153,73 +164,73 @@ func (self *Plotter) PlotNd(title string, data ...[]float64) error {
 // and its correspinding value as the y-coordinate.
 // Example:
 //  err = p.PlotX([]float64{10, 20, 30}, "my title")
-func (self *Plotter) PlotX(data []float64, title string) error {
-	f, err := ioutil.TempFile(os.TempDir(), g_gnuplot_prefix)
+func (pltr *Plotter) PlotX(data []float64, title string) error {
+	f, err := ioutil.TempFile(os.TempDir(), gnuplotPrefix)
 	if err != nil {
 		return err
 	}
 	fname := f.Name()
-	self.tmpfiles[fname] = f
+	pltr.tmpfiles[fname] = f
 	for _, d := range data {
 		f.WriteString(fmt.Sprintf("%v\n", d))
 	}
 	f.Close()
-	cmd := self.plotcmd
-	if self.nplots > 0 {
+	cmd := pltr.plotcmd
+	if pltr.nplots > 0 {
 		cmd = "replot"
 	}
 
 	var line string
 	if title == "" {
-		line = fmt.Sprintf("%s \"%s\" with %s", cmd, fname, self.style)
+		line = fmt.Sprintf("%s \"%s\" with %s", cmd, fname, pltr.style)
 	} else {
 		line = fmt.Sprintf("%s \"%s\" title \"%s\" with %s",
-			cmd, fname, title, self.style)
+			cmd, fname, title, pltr.style)
 	}
-	self.nplots += 1
-	return self.Cmd(line)
+	pltr.nplots++
+	return pltr.Cmd(line)
 }
 
 // PlotXY will create a 2-d plot using `x` and `y` as input and `title` as
 // the plot title.
 // The values of the `x` slice will be used as x-coordinates and the matching
 // values of `y` as y-coordinates (ie: for the same index).
-// If the lengthes of the slices do not match, the range for the data will be
+// If the lengths of the slices do not match, the range for the data will be
 // the smallest size of the two slices.
 // Example:
 //  err = p.PlotXY(
 //           []float64{10, 20, 30},
 //           []float64{11, 22, 33, 44},
 //           "my title")
-func (self *Plotter) PlotXY(x, y []float64, title string) error {
+func (pltr *Plotter) PlotXY(x, y []float64, title string) error {
 	npoints := min(len(x), len(y))
 
-	f, err := ioutil.TempFile(os.TempDir(), g_gnuplot_prefix)
+	f, err := ioutil.TempFile(os.TempDir(), gnuplotPrefix)
 	if err != nil {
 		return err
 	}
 	fname := f.Name()
-	self.tmpfiles[fname] = f
+	pltr.tmpfiles[fname] = f
 
 	for i := 0; i < npoints; i++ {
 		f.WriteString(fmt.Sprintf("%v %v\n", x[i], y[i]))
 	}
 
 	f.Close()
-	cmd := self.plotcmd
-	if self.nplots > 0 {
+	cmd := pltr.plotcmd
+	if pltr.nplots > 0 {
 		cmd = "replot"
 	}
 
 	var line string
 	if title == "" {
-		line = fmt.Sprintf("%s \"%s\" with %s", cmd, fname, self.style)
+		line = fmt.Sprintf("%s \"%s\" with %s", cmd, fname, pltr.style)
 	} else {
 		line = fmt.Sprintf("%s \"%s\" title \"%s\" with %s",
-			cmd, fname, title, self.style)
+			cmd, fname, title, pltr.style)
 	}
-	self.nplots += 1
-	return self.Cmd(line)
+	pltr.nplots++
+	return pltr.Cmd(line)
 }
 
 // PlotXYZ will create a 3-d plot using `x`, `y` and `z` as input and
@@ -232,15 +243,15 @@ func (self *Plotter) PlotXY(x, y []float64, title string) error {
 //           []float64{11, 22, 33, 44},
 //           []float64{111, 222, 333, 444, 555},
 //           "my title")
-func (self *Plotter) PlotXYZ(x, y, z []float64, title string) error {
+func (pltr *Plotter) PlotXYZ(x, y, z []float64, title string) error {
 	npoints := min(len(x), len(y))
 	npoints = min(npoints, len(z))
-	f, err := ioutil.TempFile(os.TempDir(), g_gnuplot_prefix)
+	f, err := ioutil.TempFile(os.TempDir(), gnuplotPrefix)
 	if err != nil {
 		return err
 	}
 	fname := f.Name()
-	self.tmpfiles[fname] = f
+	pltr.tmpfiles[fname] = f
 
 	for i := 0; i < npoints; i++ {
 		f.WriteString(fmt.Sprintf("%v %v %v\n", x[i], y[i], z[i]))
@@ -248,19 +259,19 @@ func (self *Plotter) PlotXYZ(x, y, z []float64, title string) error {
 
 	f.Close()
 	cmd := "splot" // Force 3D plot
-	if self.nplots > 0 {
+	if pltr.nplots > 0 {
 		cmd = "replot"
 	}
 
 	var line string
 	if title == "" {
-		line = fmt.Sprintf("%s \"%s\" with %s", cmd, fname, self.style)
+		line = fmt.Sprintf("%s \"%s\" with %s", cmd, fname, pltr.style)
 	} else {
 		line = fmt.Sprintf("%s \"%s\" title \"%s\" with %s",
-			cmd, fname, title, self.style)
+			cmd, fname, title, pltr.style)
 	}
-	self.nplots += 1
-	return self.Cmd(line)
+	pltr.nplots++
+	return pltr.Cmd(line)
 }
 
 // Func is a 1-d function which can be plotted with gnuplot
@@ -274,42 +285,42 @@ type Func func(x float64) float64
 //           []float64{0,1,2,3,4,5},
 //           fct,
 //           "my title")
-func (self *Plotter) PlotFunc(data []float64, fct Func, title string) error {
+func (pltr *Plotter) PlotFunc(data []float64, fct Func, title string) error {
 
-	f, err := ioutil.TempFile(os.TempDir(), g_gnuplot_prefix)
+	f, err := ioutil.TempFile(os.TempDir(), gnuplotPrefix)
 	if err != nil {
 		return err
 	}
 	fname := f.Name()
-	self.tmpfiles[fname] = f
+	pltr.tmpfiles[fname] = f
 
 	for _, x := range data {
 		f.WriteString(fmt.Sprintf("%v %v\n", x, fct(x)))
 	}
 
 	f.Close()
-	cmd := self.plotcmd
-	if self.nplots > 0 {
+	cmd := pltr.plotcmd
+	if pltr.nplots > 0 {
 		cmd = "replot"
 	}
 
 	var line string
 	if title == "" {
-		line = fmt.Sprintf("%s \"%s\" with %s", cmd, fname, self.style)
+		line = fmt.Sprintf("%s \"%s\" with %s", cmd, fname, pltr.style)
 	} else {
 		line = fmt.Sprintf("%s \"%s\" title \"%s\" with %s",
-			cmd, fname, title, self.style)
+			cmd, fname, title, pltr.style)
 	}
-	self.nplots += 1
-	return self.Cmd(line)
+	pltr.nplots++
+	return pltr.Cmd(line)
 }
 
 // SetPlotCmd changes the command used for plotting by the gnuplot subprocess.
 // Only valid plot commands are accepted (plot, splot)
-func (self *Plotter) SetPlotCmd(cmd string) (err error) {
+func (pltr *Plotter) SetPlotCmd(cmd string) (err error) {
 	switch cmd {
 	case "plot", "splot":
-		self.plotcmd = cmd
+		pltr.plotcmd = cmd
 	default:
 		err = errors.New("invalid plot cmd [" + cmd + "]")
 	}
@@ -328,7 +339,7 @@ func (self *Plotter) SetPlotCmd(cmd string) (err error) {
 // 		"boxes",
 // 		"boxerrorbars",
 // 		"pm3d"
-func (self *Plotter) SetStyle(style string) (err error) {
+func (pltr *Plotter) SetStyle(style string) (err error) {
 	allowed := []string{
 		"lines",
 		"points",
@@ -343,7 +354,7 @@ func (self *Plotter) SetStyle(style string) (err error) {
 
 	for _, s := range allowed {
 		if s == style {
-			self.style = style
+			pltr.style = style
 			err = nil
 			return err
 		}
@@ -351,54 +362,54 @@ func (self *Plotter) SetStyle(style string) (err error) {
 
 	fmt.Printf("** style '%v' not in allowed list %v\n", style, allowed)
 	fmt.Printf("** default to 'points'\n")
-	self.style = "points"
-	err = &gnuplot_error{fmt.Sprintf("invalid style '%s'", style)}
+	pltr.style = "points"
+	err = &gnuplotError{fmt.Sprintf("invalid style '%s'", style)}
 
 	return err
 }
 
 // SetXLabel changes the label for the x-axis
-func (self *Plotter) SetXLabel(label string) error {
-	return self.Cmd(fmt.Sprintf("set xlabel '%s'", label))
+func (pltr *Plotter) SetXLabel(label string) error {
+	return pltr.Cmd(fmt.Sprintf("set xlabel '%s'", label))
 }
 
 // SetYLabel changes the label for the y-axis
-func (self *Plotter) SetYLabel(label string) error {
-	return self.Cmd(fmt.Sprintf("set ylabel '%s'", label))
+func (pltr *Plotter) SetYLabel(label string) error {
+	return pltr.Cmd(fmt.Sprintf("set ylabel '%s'", label))
 }
 
 // SetZLabel changes the label for the z-axis
-func (self *Plotter) SetZLabel(label string) error {
-	return self.Cmd(fmt.Sprintf("set zlabel '%s'", label))
+func (pltr *Plotter) SetZLabel(label string) error {
+	return pltr.Cmd(fmt.Sprintf("set zlabel '%s'", label))
 }
 
 // SetLabels changes the labels for the x-,y- and z-axis in one go, depending
 // on the size of the `labels` var-arg.
 // Example:
 //  err = p.SetLabels("x", "y", "z")
-func (self *Plotter) SetLabels(labels ...string) error {
+func (pltr *Plotter) SetLabels(labels ...string) error {
 	ndims := len(labels)
 	if ndims > 3 || ndims <= 0 {
-		return &gnuplot_error{fmt.Sprintf("invalid number of dims '%v'", ndims)}
+		return &gnuplotError{fmt.Sprintf("invalid number of dims '%v'", ndims)}
 	}
-	var err error = nil
+	var err error
 
 	for i, label := range labels {
 		switch i {
 		case 0:
-			ierr := self.SetXLabel(label)
+			ierr := pltr.SetXLabel(label)
 			if ierr != nil {
 				err = ierr
 				return err
 			}
 		case 1:
-			ierr := self.SetYLabel(label)
+			ierr := pltr.SetYLabel(label)
 			if ierr != nil {
 				err = ierr
 				return err
 			}
 		case 2:
-			ierr := self.SetZLabel(label)
+			ierr := pltr.SetZLabel(label)
 			if ierr != nil {
 				err = ierr
 				return err
@@ -409,15 +420,15 @@ func (self *Plotter) SetLabels(labels ...string) error {
 }
 
 // ResetPlot clears up all plots and sets the Plotter state anew.
-func (self *Plotter) ResetPlot() (err error) {
-	for fname, fhandle := range self.tmpfiles {
+func (pltr *Plotter) ResetPlot() (err error) {
+	for fname, fhandle := range pltr.tmpfiles {
 		ferr := fhandle.Close()
 		if ferr != nil {
 			err = ferr
 		}
 		os.Remove(fname)
 	}
-	self.nplots = 0
+	pltr.nplots = 0
 	return err
 }
 
@@ -434,12 +445,12 @@ func (self *Plotter) ResetPlot() (err error) {
 func NewPlotter(fname string, persist, debug bool) (*Plotter, error) {
 	p := &Plotter{proc: nil, debug: debug, plotcmd: "plot",
 		nplots: 0, style: "points"}
-	p.tmpfiles = make(tmpfiles_db)
+	p.tmpfiles = make(tmpfilesDb)
 
 	if fname != "" {
 		panic("NewPlotter with fname is not yet supported")
 	} else {
-		proc, err := new_plotter_proc(persist)
+		proc, err := newPlotterProc(persist)
 		if err != nil {
 			return nil, err
 		}
