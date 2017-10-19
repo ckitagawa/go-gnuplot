@@ -1,6 +1,7 @@
 go-gnuplot 
 [![GoDoc](https://godoc.org/github.com/ckitagawa/go-gnuplot?status.svg)](http://godoc.org/github.com/ckitagawa/go-gnuplot)
-[![Build Status](https://travis-ci.org/ckitagawa/go-gnuplot.svg?branch=master)](https://travis-ci.org/ckitagawa/go-gnuplot)  
+[![Build Status](https://travis-ci.org/ckitagawa/go-gnuplot.svg?branch=master)](https://travis-ci.org/ckitagawa/go-gnuplot)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ckitagawa/go-gnuplot)](https://goreportcard.com/report/github.com/ckitagawa/go-gnuplot)
 ==========
 
 Simple-minded functions to work with ``gnuplot``.
@@ -12,10 +13,12 @@ exact semantics of these commands.
 
 This is a fork of
 [sbinet/go-gnuplot](https://www.github.com/sbinet/go-gnuplot). The fork is
-motivated by the lack of maintenance to the original repo. This version will
-aim to extend on and fix bugs with the original implementation. The original
-API will not change so that this can become a drag and drop replacement of the
-original. See the issues for specific planned changes.
+motivated by the lack of maintenance to the original repo and the need for 3D
+and quiver plotting in scientific computing not yet provided by native Golang
+plotting libraries. This version will aim to extend upon and modernize the
+original implementation without changing the base API so that this can remain a
+drop-in replacement. See the issues for specific planned changes or if you want
+to see a change file an issue against the repo.
 
 Installation
 ------------
@@ -84,4 +87,12 @@ scientific computing on a fairly regular basis. As a result, this package needs
 to live on a bit longer to service those in need of these specialized charts.
 That said, it is my sincere hope that this library will not be necessary for
 much longer.
+
+Plans
+----
+
+- Add unit tests, a challenge which will probably require mocking out gnuplot
+- Extend the original API to allow saving to files without `Cmd` or
+  `CheckedCmd`. Also create methods for common actions such as `replot`.
+- Support gnuplot > 5 as the original implementation was written for gnuplot 4 
 
